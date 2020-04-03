@@ -3,9 +3,13 @@
 
 namespace ctrnn
 {
-  class CTRNN::impl
+  struct CTRNN::impl
   {
-  public:
+    float *activations, *biases, *externalCurrents, *invTimeConstants, *potentials;
+    float *weights;
+    int netsize;
+    float stepsize;
+    
     void init(int netsize)
     {
       this->netsize = netsize;
@@ -14,6 +18,7 @@ namespace ctrnn
       externalCurrents = new float[netsize];
       invTimeConstants = new float[netsize];
       potentials = new float[netsize];
+      weights = new float[netsize * netsize];
       // Init properties of each neuron
       for (int i = 0; i < netsize; i++)
 	{
@@ -32,13 +37,8 @@ namespace ctrnn
 	    }
 	}
     }
-  private:
-    float *activations, *biases, *externalCurrents, *invTimeConstants, *potentials;
-    float *weights;
-    int netsize;
-    double stepsize;
   };
-  CTRNN::CTRNN(int netsize, double stepsize) : pimpl{std::make_unique<impl>()}
+  CTRNN::CTRNN(int netsize, float stepsize) : pimpl{std::make_unique<impl>()}
   {
     pimpl->init(netsize);
     return;
@@ -46,5 +46,9 @@ namespace ctrnn
   CTRNN::~CTRNN()
   {
     return;
+  }
+  float CTRNN::getActivation(int index)
+  {
+    return pimpl->activations[index];
   }
 }
