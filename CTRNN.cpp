@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 #include "CTRNN.h"
 
 namespace ctrnn
@@ -9,6 +10,16 @@ namespace ctrnn
     float *weights;
     int netsize;
     float stepsize;
+
+    float sigmoid(float in)
+    {
+      return 1 / (1 + exp(- in));
+    }
+
+    float getWeight(int fromIndex, int toIndex)
+    {
+      return weights[toIndex * netsize + fromIndex];
+    }
     
     void init(int netsize)
     {
@@ -22,11 +33,11 @@ namespace ctrnn
       // Init properties of each neuron
       for (int i = 0; i < netsize; i++)
 	{
-	  activations[i] = 0.0f;
 	  biases[i] = 0.0f;
 	  externalCurrents[i] = 0.0f;
 	  invTimeConstants[i] = 0.0f;
 	  potentials[i] = 0.0f;
+	  activations[i] = sigmoid(potentials[i] + biases[i]);
 	}
       // Init weights (netsize * netsize)
       for (int i = 0; i < netsize; i++)
@@ -50,5 +61,21 @@ namespace ctrnn
   float CTRNN::getActivation(int index)
   {
     return pimpl->activations[index];
+  }
+  float CTRNN::getBias(int index)
+  {
+    return pimpl->biases[index];
+  }
+  float CTRNN::getExternalCurrent(int index)
+  {
+    return pimpl->externalCurrents[index];
+  }
+  float CTRNN::getTimeConstant(int index)
+  {
+    return 1 / pimpl->invTimeConstants[index];
+  }
+  float CTRNN::getWeight(int fromIndex, int toIndex)
+  {
+    return pimpl->getWeight(fromIndex, toIndex);
   }
 }
