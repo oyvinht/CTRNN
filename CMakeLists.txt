@@ -1,12 +1,14 @@
 cmake_minimum_required( VERSION 3.10.0 )
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project( "ctrnn" VERSION 0.1 LANGUAGES CXX )
 
-set( SHARED_LIBRARY_NAME "${PROJECT_NAME}-shared" )
-add_library( lib CTRNN.cpp )
+# CTRNN shared lib
+add_library( ctrnn SHARED CTRNN.cpp )
 
-add_executable( ctrnn-test ctrnn-test.cpp CTRNN.h CTRNN.cpp)
-
-#add_library( ${SHARED_LIBRARY_NAME} STATIC ${MANIFEST} )
+# Test program
+add_executable( ctrnn-test ctrnn-test.cpp)
+target_link_libraries( ctrnn-test ctrnn)
 
 
