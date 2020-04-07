@@ -1,3 +1,4 @@
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include "CTRNN.h"
@@ -5,7 +6,7 @@
 
 int main() {
   
-  ctrnn::CTRNN net(2, 0.01);
+  ctrnn::CTRNN net(100, 0.01);
 
   net.setBias(1, 5.0);
   net.setBias(0, -5.0);
@@ -24,7 +25,8 @@ int main() {
   std::cout << "Weight 1->1:\t" << net.getWeight(1,1) << std::endl;
   std::cout << "Weight 1->0:\t" << net.getWeight(1,0) << std::endl;
   std::cout << std::endl << "Neuron activations written to \"net-output.dat\"." << std::endl;
-  
+
+  // Plot outputs
   FILE *outFile = fopen("net-output.dat", "w");
   for (float t = 0; t <= 10; t += 0.01)
     {
@@ -32,6 +34,16 @@ int main() {
       net.updatePotentials();
     }
   fclose(outFile);
+
+  // Run heavier CPU test
+  int startTime = std::chrono::system_clock::to_time_t ( std::chrono::system_clock::now() );
+  for (float t = 0; t <= 1000; t += 0.01)
+    {
+      net.updatePotentials();
+    }
+  int stopTime = std::chrono::system_clock::to_time_t ( std::chrono::system_clock::now() );
+
+  std::cout << "Test took " << stopTime - startTime << "s"  << std::endl;
   
   return 0;
 
