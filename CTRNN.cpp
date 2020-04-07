@@ -6,27 +6,57 @@ namespace ctrnn
 {
   struct CTRNN::impl
   {
-    double *activations, *biases, *externalCurrents, *potentials;
-    double *invTimeConstants;
-    double *weights; // One segment of 'from'-weights per 'to' neuron
+    float *activations, *biases, *externalCurrents, *potentials;
+    float *invTimeConstants;
+    float *weights; // One segment of 'from'-weights per 'to' neuron
     int netsize;
-    double stepsize;
+    float stepsize;
 
-    double sigmoid(double in)
+    float sigmoid(float in)
     {
       return 1 / (1 + exp(-in));
     }
     
-    void init(int netsize, double stepsize)
+    void init(int netsize, float stepsize)
     {
       this->netsize = netsize;
       this->stepsize = stepsize;
-      activations = new double[netsize];
-      biases = new double[netsize];
-      externalCurrents = new double[netsize];
-      invTimeConstants = new double[netsize];
-      potentials = new double[netsize];
-      weights = new double[netsize * netsize];
+      activations = new float[netsize];
+      biases = new float[netsize];
+      externalCurrents = new float[netsize];
+      invTimeConstants = new float[netsize];
+      potentials = new float[netsize];
+      weights = new float[netsize * netsize];
+      // Init properties of each neuron
+      for (int i = 0; i < netsize; i++)
+	{
+	  biases[i] = 0.0f;
+	  externalCurrents[i] = 0.0f;
+	  invTimeConstants[i] = 1.0f;
+	  potentials[i] = 0.0f;
+	  activations[i] = sigmoid(potentials[i] + biases[i]);
+	}
+      // Init weights (netsize * netsize)
+      int from, to;
+      for (to = 0; to < netsize; to++)
+	{
+	  for (from = 0; from < netsize; from++)
+	    {
+	      weights[netsize * to + from] = 0.0f;
+	    }
+	}
+    }
+
+  void initCUDA(int netsize, float stepsize)
+    {
+      this->netsize = netsize;
+      this->stepsize = stepsize;
+      activations = new float[netsize];
+      biases = new float[netsize];
+      externalCurrents = new float[netsize];
+      invTimeConstants = new float[netsize];
+      potentials = new float[netsize];
+      weights = new float[netsize * netsize];
       // Init properties of each neuron
       for (int i = 0; i < netsize; i++)
 	{
@@ -51,7 +81,24 @@ namespace ctrnn
     {
       for (int to = 0; to < netsize; to++)
 	{
-	  double input = externalCurrents[to];
+	  float input = externalCurrents[to];
+	  for (int from = 0; from < netsize; from++)
+	    {
+	      input += weights[netsize * to + from] * activations[from];
+	    }
+	  potentials[to] += stepsize * invTimeConstants[to] * (input - potentials[to]);
+	}
+      for (int i = 0; i < netsize; i++)
+	{
+	  activations[i] = sigmoid(potentials[i] + biases[i]);
+	}
+    }
+
+    void updatePotentialsEulerCUDA()
+    {
+      for (int to = 0; to < netsize; to++)
+	{
+	  float input = externalCurrents[to];
 	  for (int from = 0; from < netsize; from++)
 	    {
 	      input += weights[netsize * to + from] * activations[from];
@@ -67,13 +114,13 @@ namespace ctrnn
     void updatePotentialsRK4()
     {
       int from, to;
-      double input;
-      double *k1 = new double[netsize];
-      double *k2 = new double[netsize];
-      double *k3 = new double[netsize];
-      double *k4 = new double[netsize];
-      double *tmpAct = new double[netsize];
-      double *tmpPot = new double[netsize];
+      float input;
+      float *k1 = new float[netsize];
+      float *k2 = new float[netsize];
+      float *k3 = new float[netsize];
+      float *k4 = new float[netsize];
+      float *tmpAct = new float[netsize];
+      float *tmpPot = new float[netsize];
       // Step 1
       for (to = 0; to < netsize; to++)
 	{
@@ -131,54 +178,55 @@ namespace ctrnn
 	}
     }
   };
-  CTRNN::CTRNN(int netsize, double stepsize) : pimpl{std::make_unique<impl>()}
+  CTRNN::CTRNN(int netsize, float stepsize) : pimpl{std::make_unique<impl>()}
   {
-    pimpl->init(netsize, stepsize);
+    pimpl->initCUDA(netsize, stepsize);
     return;
   }
   CTRNN::~CTRNN()
   {
     return;
   }
-  double CTRNN::getActivation(int index)
+  float CTRNN::getActivation(int index)
   {
     return pimpl->activations[index];
   }
-  double CTRNN::getBias(int index)
+  float CTRNN::getBias(int index)
   {
     return pimpl->biases[index];
   }
-  double CTRNN::getExternalCurrent(int index)
+  float CTRNN::getExternalCurrent(int index)
   {
     return pimpl->externalCurrents[index];
   }
-  double CTRNN::getTimeConstant(int index)
+  float CTRNN::getTimeConstant(int index)
   {
     return 1 / pimpl->invTimeConstants[index];
   }
-  double CTRNN::getWeight(int fromIndex, int toIndex)
+  float CTRNN::getWeight(int fromIndex, int toIndex)
   {
     return pimpl->weights[pimpl->netsize * toIndex + fromIndex];
   }
-  void CTRNN::setBias(int index, double bias)
+  void CTRNN::setBias(int index, float bias)
   {
     pimpl->biases[index] = bias;
   }
-  void CTRNN::setExternalCurrent(int index, double externalCurrent)
+  void CTRNN::setExternalCurrent(int index, float externalCurrent)
   {
     pimpl->externalCurrents[index] = externalCurrent;
   }
-  void CTRNN::setTimeConstant(int index, double timeConstant)
+  void CTRNN::setTimeConstant(int index, float timeConstant)
   {
     pimpl->invTimeConstants[index] = 1 / timeConstant;
   }
-  void CTRNN::setWeight(int fromIndex, int toIndex, double weight)
+  void CTRNN::setWeight(int fromIndex, int toIndex, float weight)
   {
     pimpl->weights[pimpl->netsize * toIndex + fromIndex] = weight;
   }
   void CTRNN::updatePotentials()
   {
     //pimpl->updatePotentialsEuler();
-    pimpl->updatePotentialsRK4();
+    pimpl->updatePotentialsEulerCUDA();
+    //pimpl->updatePotentialsRK4();
   }
 }

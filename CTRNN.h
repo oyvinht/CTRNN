@@ -6,17 +6,17 @@ namespace ctrnn
   class CTRNN
   {
   public:
-    CTRNN(int netsize = 0, double stepsize = 0.01);
+    CTRNN(int netsize = 0, float stepsize = 0.01);
     ~CTRNN();
-    double getActivation(int index);
-    double getBias(int index);
-    double getExternalCurrent(int index);
-    double getTimeConstant(int index);
-    double getWeight(int fromIndex, int toIndex);
-    void setBias(int index, double bias);
-    void setExternalCurrent(int index, double externalCurrent);
-    void setTimeConstant(int index, double timeConstant);
-    void setWeight(int from, int to, double weight);
+    float getActivation(int index);
+    float getBias(int index);
+    float getExternalCurrent(int index);
+    float getTimeConstant(int index);
+    float getWeight(int fromIndex, int toIndex);
+    void setBias(int index, float bias);
+    void setExternalCurrent(int index, float externalCurrent);
+    void setTimeConstant(int index, float timeConstant);
+    void setWeight(int from, int to, float weight);
     void updatePotentials();
   private:
     struct impl;
