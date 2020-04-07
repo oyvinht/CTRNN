@@ -6,7 +6,7 @@
 
 int main() {
   
-  ctrnn::CTRNN net(100, 0.01);
+  ctrnn::CTRNN net(2, 0.01);
 
   net.setBias(1, 5.0);
   net.setBias(0, -5.0);
@@ -36,8 +36,9 @@ int main() {
   fclose(outFile);
 
   // Run heavier CPU test
+  return 0;
   int startTime = std::chrono::system_clock::to_time_t ( std::chrono::system_clock::now() );
-  for (float t = 0; t <= 1000; t += 0.01)
+  for (float t = 0; t <= 20; t += 0.01)
     {
       net.updatePotentials();
     }

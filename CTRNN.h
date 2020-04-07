@@ -1,5 +1,11 @@
 #pragma once
 #include<memory>
+#include<math.h>
+
+float sigmoid(float in)
+{
+  return 1 / (1 + exp(-in));
+}
 
 namespace ctrnn
 {
