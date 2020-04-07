@@ -92,7 +92,7 @@ namespace ctrnn
 	  input = externalCurrents[to];
 	  for (from = 0; from < netsize; from++)
 	    {
-	      input += weights[netsize * from + to] * tmpAct[from];
+	      input += weights[netsize * to + from] * tmpAct[from];
 	    }
 	  k2[to] = stepsize * invTimeConstants[to] * (input - tmpPot[to]);
 	  tmpPot[to] = potentials[to] + (0.5 * k2[to]);
@@ -107,7 +107,7 @@ namespace ctrnn
 	  input = externalCurrents[to];
 	  for (from = 0; from < netsize; from++)
 	    {
-	      input += weights[netsize * from + to] * tmpAct[from];
+	      input += weights[netsize * to + from] * tmpAct[from];
 	    }
 	  k3[to] = stepsize * invTimeConstants[to] * (input - tmpPot[to]);
 
@@ -123,7 +123,7 @@ namespace ctrnn
 	  input = externalCurrents[to];
 	  for (from = 0; from < netsize; from++)
 	    {
-	      input += weights[netsize * from + to] * tmpAct[from];
+	      input += weights[netsize * to + from] * tmpAct[from];
 	    }
 	  k4[to] = stepsize * invTimeConstants[to] * (input - tmpPot[to]);
 	  potentials[to] += (k1[to] + (2 * k2[to]) + (2 * k3[to]) + k4[to]) / 6;
@@ -178,7 +178,7 @@ namespace ctrnn
   }
   void CTRNN::updatePotentials()
   {
-    pimpl->updatePotentialsEuler();
-    //pimpl->updatePotentialsRK4();
+    //pimpl->updatePotentialsEuler();
+    pimpl->updatePotentialsRK4();
   }
 }
