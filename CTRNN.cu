@@ -12,7 +12,9 @@ void doUpdatePotentialsEulerCUDA(int netsize,
 				 float *invTimeConstants,
 				 float *weights)
 {
-  for (int to = 0; to < netsize; to++)
+  int startN = threadIdx.x;
+  int stopN = threadIdx.x + (netsize / blockDim.x);
+  for (int to = startN; to < stopN; to++)
     {
       float input = externalCurrents[to];
       for (int from = 0; from < netsize; from++)
@@ -21,7 +23,7 @@ void doUpdatePotentialsEulerCUDA(int netsize,
 	}
       potentials[to] += stepsize * invTimeConstants[to] * (input - potentials[to]);
     }
-  for (int i = 0; i < netsize; i++)
+  for (int i = startN; i < stopN; i++)
     {
       activations[i] = 1 / ( 1 + exp(-(potentials[i] + biases[i])));
     }
@@ -49,14 +51,7 @@ namespace ctrnn
       cudaMallocManaged(&invTimeConstants, netsize * sizeof(float));
       cudaMallocManaged(&potentials, netsize * sizeof(float));
       cudaMallocManaged(&weights, netsize * netsize * sizeof(float));
-      /*
-      activations = new float[netsize];
-      biases = new float[netsize];
-      externalCurrents = new float[netsize];
-      invTimeConstants = new float[netsize];
-      potentials = new float[netsize];
-      weights = new float[netsize * netsize];
-      */
+
       // Init properties of each neuron
       for (int i = 0; i < netsize; i++)
 	{
@@ -79,14 +74,15 @@ namespace ctrnn
 
    void updatePotentialsEulerCUDA()
     {
-      doUpdatePotentialsEulerCUDA<<<1,1>>>(netsize,
-				  stepsize,
-				  activations,
-				  biases,
-				  externalCurrents,
-				  potentials,
-				  invTimeConstants,
-				  weights);
+      doUpdatePotentialsEulerCUDA<<<1,netsize>>>
+	(netsize,
+	 stepsize,
+	 activations,
+	 biases,
+	 externalCurrents,
+	 potentials,
+	 invTimeConstants,
+	 weights);
     }
     
     void updatePotentialsRK4()
