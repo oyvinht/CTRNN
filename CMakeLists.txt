@@ -6,6 +6,7 @@ project( "ctrnn" VERSION 0.1 LANGUAGES CXX CUDA )
 
 # CTRNN shared lib
 add_library( ctrnn SHARED CTRNN.cu )
+#add_library( ctrnn SHARED CTRNN.cpp )
 set_target_properties( ctrnn PROPERTIES CUDA_SEPARABLE_COMPILATION ON )
 
 # Test program

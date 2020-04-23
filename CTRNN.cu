@@ -3,30 +3,24 @@
 #include "CTRNN.h"
 
 __global__
-void doUpdatePotentialsEulerCUDA(int netsize,
-				 float stepsize,
-				 float *activations,
-				 float *biases,
-				 float *externalCurrents,
-				 float *potentials,
-				 float *invTimeConstants,
-				 float *weights)
+void ctrnn_CUDA_updatePotentialsEuler(int netsize,
+				      float stepsize,
+				      float *activations,
+				      float *biases,
+				      float *externalCurrents,
+				      float *potentials,
+				      float *invTimeConstants,
+				      float *weights)
 {
-  int startN = threadIdx.x;
-  int stopN = threadIdx.x + (netsize / blockDim.x);
-  for (int to = startN; to < stopN; to++)
+  int to = blockIdx.x * blockDim.x + threadIdx.x;
+  float input = externalCurrents[to];
+  // TODO: Maybe try to put connected neurons into same blocks somehow
+  for (int from = 0; from < netsize; from++)
     {
-      float input = externalCurrents[to];
-      for (int from = 0; from < netsize; from++)
-	{
-	  input += weights[netsize * to + from] * activations[from];
-	}
-      potentials[to] += stepsize * invTimeConstants[to] * (input - potentials[to]);
+      input += weights[netsize * to + from] * activations[from];
     }
-  for (int i = startN; i < stopN; i++)
-    {
-      activations[i] = 1 / ( 1 + exp(-(potentials[i] + biases[i])));
-    }
+  potentials[to] += stepsize * invTimeConstants[to] * (input - potentials[to]);
+  activations[to] = 1 / ( 1 + exp(-(potentials[to] + biases[to])));
 }
 
 namespace ctrnn
@@ -39,6 +33,9 @@ namespace ctrnn
     float *weights; // One segment of 'from'-weights per 'to' neuron
     int netsize;
     float stepsize;
+    int numBlockThreads; // TODO: Number of cores per SM
+    int numBlocks; // TODO: Find number of SM on card (all threads in block run on same SM)
+
     
   void init(int netsize, float stepsize)
     {
@@ -70,11 +67,18 @@ namespace ctrnn
 	      weights[netsize * to + from] = 0.0f;
 	    }
 	}
+      int maxBlocks = 4;
+      numBlockThreads = 32 * 4;
+      numBlocks = ceil(netsize / (float) numBlockThreads);
+      std::cout << "Initialized net of size " << netsize << std::endl;
+      std::cout << "Processing config:" << std::endl;
+      std::cout << "  Parallel blocks:         \t"  << numBlocks << std::endl;
+      std::cout << "  Threads per block:       \t" << numBlockThreads << std::endl;
     }
 
    void updatePotentialsEulerCUDA()
     {
-      doUpdatePotentialsEulerCUDA<<<1,netsize>>>
+      ctrnn_CUDA_updatePotentialsEuler<<<numBlocks, numBlockThreads>>>
 	(netsize,
 	 stepsize,
 	 activations,
